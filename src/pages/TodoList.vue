@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { Ref, ref } from "vue";
 import Modal from "../components/modal/Modal.vue";
+import Select from "../components/select/Select.vue";
 
 interface Note {
   id: number;
   text: string;
+  isEditing: boolean;
 }
 
 const notes: Ref<Note[]> = ref([]);
 
 const addNote = (newNote: string) => {
-  notes.value.push({ id: notes.value.length + 1, text: newNote });
+  notes.value.push({
+    id: notes.value.length + 1,
+    text: newNote,
+    isEditing: false,
+  });
 };
 
 const deleteNote = (id: number) => {
@@ -19,9 +25,21 @@ const deleteNote = (id: number) => {
   });
 };
 
-// const editNote = (text: string) => {
+const editNote = (id: number) => {
+  const note = notes.value.find((el) => el.id === id);
 
-// }
+  if (note) {
+    note.isEditing = true;
+  }
+};
+
+const saveNote = (id: number, newText: string) => {
+  const note = notes.value.find((el) => el.id === id);
+  if (note) {
+    note.text = newText;
+    note.isEditing = false;
+  }
+};
 </script>
 
 <template>
@@ -39,16 +57,7 @@ const deleteNote = (id: number) => {
         <fa class="border-purple-400 size-6" icon="search" />
       </div>
       <div class="block">
-        <select
-          id="countries"
-          class="w-[100px] h-12 border-2 border-purple-400 bg-purple-400 outline-none text-base rounded-lg py-2.5 px-4"
-        >
-          <option class="" selected>All</option>
-          <option value="US">Check</option>
-          <option value="CA">No Check</option>
-          <option value="FR">****</option>
-          <option value="DE">****</option>
-        </select>
+        <Select />
       </div>
     </div>
 
@@ -64,16 +73,27 @@ const deleteNote = (id: number) => {
         >
           <input type="checkbox" :id="`note${note.id}`" class="mr-2" />
           <div class="check">
-            <label :for="`note${note.id}`" class="text-sm font-bold">
-              {{ note.text }}
-            </label>
-            <input
-              class="outline-none ml-2 w-56 bg-transparent"
-              type="text"
-              placeholder="Edit your note"
-            />
+            <div v-if="note.isEditing">
+              <input
+                class="w-full border-b border-purple-400 outline-none"
+                type="text"
+                v-model="note.text"
+                @blur="saveNote(note.id, note.text)"
+                @keyup.enter="saveNote(note.id, note.text)"
+              />
+            </div>
+            <div v-else>
+              <label :for="`note${note.id}`" class="text-sm font-bold">
+                {{ note.text }}
+              </label>
+            </div>
             <div class="space">
-              <fa class="fa cursor-pointer" icon="pen" />
+              <fa
+                v-if="!note.isEditing"
+                @click="editNote(note.id)"
+                class="fa cursor-pointer"
+                icon="pen"
+              />
               <fa
                 @click="deleteNote(note.id)"
                 class="cursor-pointer"
