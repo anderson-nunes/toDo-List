@@ -2,20 +2,25 @@
 import { Ref, ref } from "vue";
 import Modal from "../components/modal/Modal.vue";
 import Select from "../components/select/Select.vue";
+import { computed } from "vue";
 
 interface Note {
   id: number;
   text: string;
   isEditing: boolean;
+  isChecked: boolean;
 }
 
 const notes: Ref<Note[]> = ref([]);
+const searchNotes = ref("");
+const selectedFilter = ref("All");
 
 const addNote = (newNote: string) => {
   notes.value.push({
     id: notes.value.length + 1,
     text: newNote,
     isEditing: false,
+    isChecked: false,
   });
 };
 
@@ -40,6 +45,22 @@ const saveNote = (id: number, newText: string) => {
     note.isEditing = false;
   }
 };
+
+const filteredNotes = computed(() => {
+  return notes.value.filter((note) => {
+    const matchesText = note.text
+      .toLowerCase()
+      .includes(searchNotes.value.toLowerCase());
+
+    if (selectedFilter.value === "Checked") {
+      return note.isChecked && matchesText;
+    } else if (selectedFilter.value === "Not Checked") {
+      return !note.isChecked && matchesText;
+    } else {
+      return matchesText;
+    }
+  });
+});
 </script>
 
 <template>
@@ -50,6 +71,7 @@ const saveNote = (id: number, newText: string) => {
         class="flex items-center px-4 py-2 rounded-md border-2 border-purple-400 overflow-hidden font-[sans-serif]"
       >
         <input
+          v-model="searchNotes"
           type="text"
           placeholder="Search note..."
           class="w-[596px] outline-none bg-transparent text-purple-400 text-sm"
@@ -57,21 +79,32 @@ const saveNote = (id: number, newText: string) => {
         <fa class="border-purple-400 size-6" icon="search" />
       </div>
       <div class="block">
-        <Select />
+        <Select
+          v-model="selectedFilter"
+          :items="['All', 'Checked', 'Not Checked']"
+        />
       </div>
     </div>
 
     <div class="mt-4 space-y-2 w-[600px]">
-      <div v-if="notes.length === 0" class="text-center text-lg text-gray-500">
+      <div
+        v-if="filteredNotes.length === 0"
+        class="text-center text-lg text-gray-500"
+      >
         <h2>Create your tasks</h2>
       </div>
       <div v-else>
         <div
           class="flex items-center pb-2 border-b border-purple-400 mb-4"
-          v-for="note in notes"
+          v-for="note in filteredNotes"
           :key="note.id"
         >
-          <input type="checkbox" :id="`note${note.id}`" class="mr-2" />
+          <input
+            v-model="note.isChecked"
+            type="checkbox"
+            :id="`note${note.id}`"
+            class="mr-2"
+          />
           <div class="check">
             <div v-if="note.isEditing">
               <input
